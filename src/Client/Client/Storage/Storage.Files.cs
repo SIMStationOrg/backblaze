@@ -139,7 +139,7 @@ namespace Bytewizer.Backblaze.Client
             var downloadAuthorization = await _client.GetDownloadAuthorizationAsync(downloadAuthorizationRequest, _cancellationToken);
 
             var fileNameEncoded = fileName.Split('/').Select(x => x.ToUrlEncode()).ToList();
-            var downloadUrl = $"{_client.AccountInfo.DownloadUrl}file/{bucket.BucketName}/{fileNameEncoded}?Authorization={downloadAuthorization.Response.AuthorizationToken}";
+            var downloadUrl = $"{_client.AccountInfo.DownloadUrl}file/{bucket.BucketName}/{string.Join("/", fileNameEncoded)}?Authorization={downloadAuthorization.Response.AuthorizationToken}";
 
             var response = new ApiResults<GetDownloadUrlByFileNameResponse>(
                 downloadAuthorization.HttpResponse,
