@@ -53,7 +53,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Deletes a specific version of a file. 
+        /// Deletes a specific version of a file.
         /// </summary>
         /// <param name="fileName">The name of the file to delete.</param>
         /// <param name="fileId">The id of the file to delete.</param>
@@ -67,7 +67,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Downloads a specific version of a file by file id.  
+        /// Downloads a specific version of a file by file id.
         /// </summary>
         /// <param name="request">The <see cref="DownloadFileByIdRequest"/> to send.</param>
         /// <param name="content">The download content to receive.</param>
@@ -82,7 +82,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Downloads the most recent version of a file by name. 
+        /// Downloads the most recent version of a file by name.
         /// </summary>
         /// <param name="request">The <see cref="DownloadFileByIdRequest"/> to send.</param>
         /// <param name="content">The download content to receive.</param>
@@ -97,9 +97,9 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Generate an authorization token that can be used to download files from a private bucket. 
+        /// Generate an authorization token that can be used to download files from a private bucket.
         /// </summary>
-        /// <param name="bucketId">The buckete id the download authorization token will allow access.</param>
+        /// <param name="bucketId">The bucket id the download authorization token will allow access.</param>
         /// <param name="fileNamePrefix">The file name prefix of files the download authorization token will allow access.</param>
         /// <param name="validDurationInSeconds">The number of seconds before the authorization token will expire.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -112,7 +112,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Generate an authorization token that can be used to download files from a private bucket. 
+        /// Generate an authorization token that can be used to download files from a private bucket.
         /// </summary>
         /// <param name="request">The <see cref="GetDownloadAuthorizationRequest"/> to send.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -124,7 +124,65 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Gets information about a file. 
+        /// Generate a download URL that can be used to download files from a private bucket.
+        /// </summary>
+        /// <param name="bucketId">The bucket id which contains the file.</param>
+        /// <param name="fileName">The file name the download URL will allow access.</param>
+        /// <param name="validDurationInSeconds">The number of seconds before the download URL will expire.</param>
+        /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
+        /// <exception cref="ApiException">Thrown when an error occurs during client operation.</exception>
+        async Task<IApiResults<GetDownloadUrlByFileNameResponse>> IStorageFiles.GetDownloadUrlByFileNameAsync
+            (string bucketId, string fileName, long validDurationInSeconds)
+        {
+            var bucket = await Buckets.FindByIdAsync(bucketId);
+            var downloadAuthorizationRequest = new GetDownloadAuthorizationRequest(bucketId, fileName, validDurationInSeconds);
+            var downloadAuthorization = await _client.GetDownloadAuthorizationAsync(downloadAuthorizationRequest, _cancellationToken);
+
+            var downloadUrl = $"{_client.AccountInfo.DownloadUrl}file/{bucket.BucketName}/{fileName}?Authorization={downloadAuthorization.Response.AuthorizationToken}";
+
+            var response = new ApiResults<GetDownloadUrlByFileNameResponse>(
+                downloadAuthorization.HttpResponse,
+                new GetDownloadUrlByFileNameResponse
+                {
+                    BucketId = bucketId,
+                    FileName = fileName,
+                    AuthorizationToken = downloadAuthorization.Response.AuthorizationToken,
+                    DownloadUrl = downloadUrl
+                });
+
+            return response;
+        }
+
+        /// <summary>
+        /// Generate a download URL that can be used to download files from a private bucket.
+        /// </summary>
+        /// <param name="request">The <see cref="GetDownloadAuthorizationRequest"/> to send.</param>
+        /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
+        /// <exception cref="ApiException">Thrown when an error occurs during client operation.</exception>
+        async Task<IApiResults<GetDownloadUrlByFileNameResponse>> IStorageFiles.GetDownloadUrlByFileNameAsync
+            (GetDownloadUrlByFileNameRequest request)
+        {
+            var bucket = await Buckets.FindByIdAsync(request.BucketId);
+            var downloadAuthorizationRequest = new GetDownloadAuthorizationRequest(request.BucketId, request.FileName, request.ValidDurationInSeconds);
+            var downloadAuthorization = await _client.GetDownloadAuthorizationAsync(downloadAuthorizationRequest, _cancellationToken);
+
+            var downloadUrl = $"{_client.AccountInfo.DownloadUrl}file/{bucket.BucketName}/{request.FileName}?Authorization={downloadAuthorization.Response.AuthorizationToken}";
+
+            var response = new ApiResults<GetDownloadUrlByFileNameResponse>(
+                downloadAuthorization.HttpResponse,
+                new GetDownloadUrlByFileNameResponse
+                {
+                    BucketId = request.BucketId,
+                    FileName = request.FileName,
+                    AuthorizationToken = downloadAuthorization.Response.AuthorizationToken,
+                    DownloadUrl = downloadUrl
+                });
+
+            return response;
+        }
+
+        /// <summary>
+        /// Gets information about a file.
         /// </summary>
         /// <param name="fileId">The id of the file to get information about.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -137,7 +195,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Gets a url for uploading files. 
+        /// Gets a url for uploading files.
         /// </summary>
         /// <param name="bucketId">The bucket id you want to upload to.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -150,7 +208,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Gets a url for uploading files. 
+        /// Gets a url for uploading files.
         /// </summary>
         /// <param name="bucketId">The ID of the bucket that you want to upload to.</param>
         /// <param name="cacheTTL">An absolute cache expiration time to live (TTL) relative to now.</param>
@@ -164,7 +222,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Hides a file so that <see cref="DownloadByIdAsync(DownloadFileByIdRequest, Stream, IProgress{ICopyProgress}, CancellationToken)"/> will not find the file but previous versions of the file are still stored.   
+        /// Hides a file so that <see cref="DownloadByIdAsync(DownloadFileByIdRequest, Stream, IProgress{ICopyProgress}, CancellationToken)"/> will not find the file but previous versions of the file are still stored.
         /// </summary>
         /// <param name="bucketId">The bucket id containing the file to hide.</param>
         /// <param name="fileName">The name of the file to hide.</param>
@@ -178,7 +236,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// List the names of files in a bucket starting at a given name. 
+        /// List the names of files in a bucket starting at a given name.
         /// </summary>
         /// <param name="bucketId">The bucket id to look for file names in.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -191,7 +249,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// List the names of files in a bucket starting at a given name. 
+        /// List the names of files in a bucket starting at a given name.
         /// </summary>
         /// <param name="request">The list of file name request to send.</param>
         /// <param name="cacheTTL">An absolute cache expiration time to live (TTL) relative to now.</param>
@@ -205,7 +263,7 @@ namespace Bytewizer.Backblaze.Client
 
         /// <summary>
         /// List versions of the files contained in one bucket in alphabetical order by file name
-        /// and by reverse of date/time uploaded for versions of files with the same name. 
+        /// and by reverse of date/time uploaded for versions of files with the same name.
         /// </summary>
         /// <param name="bucketId">The bucket id to look for file names in.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -219,7 +277,7 @@ namespace Bytewizer.Backblaze.Client
 
         /// <summary>
         /// List versions of the files contained in one bucket in alphabetical order by file name
-        /// and by reverse of date/time uploaded for versions of files with the same name. 
+        /// and by reverse of date/time uploaded for versions of files with the same name.
         /// </summary>
         /// <param name="request">The <see cref="ListFileVersionRequest"/> to send.</param>
         /// <param name="cacheTTL">An absolute cache expiration time to live (TTL) relative to now.</param>
@@ -232,7 +290,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// List information about large file uploads that have been started but have not been finished or canceled. 
+        /// List information about large file uploads that have been started but have not been finished or canceled.
         /// </summary>
         /// <param name="bucketId">The bucket id to look for unfinished file names in.</param>
         /// <exception cref="AuthenticationException">Thrown when authentication fails.</exception>
@@ -245,7 +303,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// List information about large file uploads that have been started but have not been finished or canceled. 
+        /// List information about large file uploads that have been started but have not been finished or canceled.
         /// </summary>
         /// <param name="request">The <see cref="ListUnfinishedLargeFilesRequest"/> to send.</param>
         /// <param name="cacheTTL">An absolute cache expiration time to live (TTL) relative to now.</param>
@@ -260,7 +318,7 @@ namespace Bytewizer.Backblaze.Client
         #endregion
 
         /// <summary>
-        /// Uploads a file by bucket id and file name to Backblaze B2 Cloud Storage. 
+        /// Uploads a file by bucket id and file name to Backblaze B2 Cloud Storage.
         /// </summary>
         /// <param name="bucketId">The bucket id you want to upload to.</param>
         /// <param name="fileName">The name of the file to upload.</param>
@@ -324,7 +382,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Downloads a file by bucket and file name from Backblaze B2 Cloud Storage. 
+        /// Downloads a file by bucket and file name from Backblaze B2 Cloud Storage.
         /// </summary>
         /// <param name="bucketName">The name of the bucket to download from.</param>
         /// <param name="fileName">The name of the file to download.</param>
@@ -358,7 +416,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Downloads a file by file id from Backblaze B2 Cloud Storage. 
+        /// Downloads a file by file id from Backblaze B2 Cloud Storage.
         /// </summary>
         /// <param name="fileId">The unique id of the file to download.</param>
         /// <param name="localPath">The relative or absolute path to the file. This string is not case-sensitive.</param>
@@ -406,7 +464,7 @@ namespace Bytewizer.Backblaze.Client
 
         /// <summary>
         /// Returns an enumerable that iterates through all versions of the files contained in one bucket in alphabetical order by file name
-        /// and by reverse of date/time uploaded for versions of files with the same name. 
+        /// and by reverse of date/time uploaded for versions of files with the same name.
         /// </summary>
         /// <param name="request">The <see cref="ListFileVersionRequest"/> to send.</param>
         /// <param name="cacheTTL">An absolute cache expiration time to live (TTL) relative to now.</param>
@@ -420,7 +478,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Returns an enumerable that iterates through all large file uploads that have been started but have not finished or canceled. 
+        /// Returns an enumerable that iterates through all large file uploads that have been started but have not finished or canceled.
         /// </summary>
         /// <param name="request">The <see cref="ListUnfinishedLargeFilesRequest"/> to send.</param>
         /// <param name="cacheTTL">An absolute cache expiration time to live (TTL) relative to now.</param>
@@ -453,7 +511,7 @@ namespace Bytewizer.Backblaze.Client
         }
 
         /// <summary>
-        /// Deletes all files contained in bucket. 
+        /// Deletes all files contained in bucket.
         /// </summary>
         /// <param name="request">The <see cref="ListFileVersionRequest"/> to send.</param>
         /// <param name="dop">The degree of parallelism. Use 0 to default to <see cref="Environment.ProcessorCount"/>.</param>
@@ -463,8 +521,8 @@ namespace Bytewizer.Backblaze.Client
             (ListFileVersionRequest request, int dop)
         {
             var response = new List<DeleteFileVersionResponse>();
-            
-            var files = await Files.GetEnumerableAsync(request);      
+
+            var files = await Files.GetEnumerableAsync(request);
             await files.ForEachAsync(dop, async filepath =>
             {
                 var deleteRequest = new DeleteFileVersionRequest(filepath.FileId, filepath.FileName);
